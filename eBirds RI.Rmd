@@ -1,0 +1,141 @@
+---
+title: "eBirds RI"
+author: "Vivian Lee"
+date: '`r Sys.Date()`'
+output: 
+  pdf_document: default
+  html_document: default
+geometry:
+  margin=0.7in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE)
+library(rvest)
+library(tidyverse)
+library(lubridate)
+```
+
+## Bird Sightings By Species Over Time in Rhode Island  
+
+Data gathered from ebird.org  
+
+Spring Migration (Mar-May)  
+Breeding Season (Jun-Jul)  
+Fall Migration (Aug-Nov)  
+Winter (Dec-Feb)  
+
+```{r ri_ebirds, message=FALSE}
+
+# Function to extract bird sighting data
+
+get_bird_sightings <- function(url) {
+  # Scrape the results from the given url from eBirds for a specific region 
+  # Args:
+  #   url - the url for the eBirds region page
+  # Return:
+  #   A data frame containing the bird information organized by species code, name, and
+  #   total sightings for specified date range, default = all sightings to date
+  region_page <- read_html(url)
+  
+  bird_sightings <- html_node(region_page, 'body') %>%
+    html_node(css='#sightingsTable') %>%
+    html_node('tbody') %>%
+    html_nodes(xpath='//tr[contains(@id, "has-det")]')
+    
+  species <- bird_sightings %>%
+    html_nodes(css='.species-name') %>%
+    html_node('a')
+  
+  species_codes <- species %>%
+    html_attr('data-species-code')
+  
+  species_names <- species %>%
+    html_text()
+  
+  # X connotes 1 or more birds sighted. Replace X with 1 since at least 1 bird was sighted.
+  counts <- bird_sightings %>%
+    html_node(xpath = 'td[@headers="c"]') %>%
+    html_text() %>%
+    lapply(function(x) ifelse(x=='X', 1, x)) %>%
+    unlist() %>%
+    as.integer()
+    
+  # Suppress warnings when NA is assigned to missing dates
+  dates <- suppressWarnings(bird_sightings %>%
+    html_node(xpath = 'td[@headers="d"]') %>%
+    html_text() %>%
+    dmy())
+  
+  # Construct dataframe of bird sighting data, omit records without a name column value
+  # as these are sightings without where the bird species was not properly identified
+  # and they do not follow a proper naming convention
+  tibble(
+    code = species_codes,
+    name = species_names,
+    count = counts,
+    date = dates
+  ) %>%
+    filter(!is.na(name))
+}
+
+(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
+(washington_county_df = get_bird_sightings('https://ebird.org/region/US-RI-009?yr=all&m=&rank=mrec'))
+(rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all'))
+
+# rhode_island_df %>%
+#   filter(grepl('Warbler', name))
+
+# birds_df %>%
+#   group_by(name, code) %>%
+#   summarise(
+#     count = sum(count, na.rm = TRUE)
+#   )
+```
+
+```{r birds_for_date_range, message=FALSE}
+get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
+  if (missing(start_date) & missing(end_date)) { 
+    df 
+  }
+  else if (missing(start_date)) { 
+    df %>% filter(date <= as.Date(end_date)) 
+  }
+  else if (missing(end_date)) { 
+    df %>% filter(date >= as.Date(start_date)) 
+  }
+  else {
+    df %>% filter(date >= as.Date(start_date) & date <= as.Date(end_date))
+  }
+}
+
+# Weekapaug bird sightings 2018-present
+get_bird_sightings_for_date_range(weekapaug_df, start_date="2018-01-01")
+
+# Weekapaug bird sightings 2010-2015
+get_bird_sightings_for_date_range(weekapaug_df, start_date="2010-01-01", end_date="2015-01-01")
+
+# Weekapaug bird sightings 2019 ordered by frequency
+get_bird_sightings_for_date_range(weekapaug_df, start_date="2019-01-01") %>%
+  arrange(desc(count))
+
+get_spring_migration_sightings <- function(df, year) {
+  spring_start <- str_c(year, "-03-01")
+  spring_end <- str_c(year, "-05-01")
+  df %>% filter(date >= as.Date(spring_start) & date <= as.Date(spring_end)) %>%
+    arrange(desc(count))
+}
+
+get_spring_migration_sightings(weekapaug_df, "2019")
+get_spring_migration_sightings(weekapaug_df, "2018")
+get_spring_migration_sightings(weekapaug_df, "2017")
+get_spring_migration_sightings(weekapaug_df, "2016")
+get_spring_migration_sightings(weekapaug_df, "2015")
+
+# Spring Migration (Mar-May)  
+# Breeding Season (Jun-Jul)  
+# Fall Migration (Aug-Nov)  
+# Winter (Dec-Feb)  
+  
+```
+
