@@ -90,6 +90,8 @@ get_bird_sightings <- function(url) {
 
 ```
 
+Create data tables for bird sightings in Weekapaug, Washington County, and Rhode Island
+
 ```{r}
 (weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
 (washington_county_df = get_bird_sightings('https://ebird.org/region/US-RI-009?yr=all&m=&rank=mrec'))
@@ -102,7 +104,7 @@ get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
   # Args:
   #   df - the dataframe to filter
   #   start_date - the start date in YYYY-MM-DD format, inclusive
-  #   end_date - the end date in YYYY-MM-DD format, inclusive
+  #   end_date - the end date in YYYY-MM-DD format, non-inclusive
   # Return:
   #   A data frame containing the bird sightings from the given df, filtered for the
   #   specified date range
@@ -110,13 +112,13 @@ get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
     df 
   }
   else if (missing(start_date)) { 
-    df %>% filter(date <= as.Date(end_date)) 
+    df %>% filter(date < as.Date(end_date)) 
   }
   else if (missing(end_date)) { 
     df %>% filter(date >= as.Date(start_date)) 
   }
   else {
-    df %>% filter(date >= as.Date(start_date) & date <= as.Date(end_date))
+    df %>% filter(date >= as.Date(start_date) & date < as.Date(end_date))
   }
 }
 
@@ -141,21 +143,37 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
   if (year < 1970)
     stop("year must be between 1970-present")
   
-  start_month <- switch(season, "spring" = 3,"breeding" = 6,"fall" = 8,"winter" = 12, "all" = 1)
-  end_month <- switch(season, "spring" = 5, "breeding" = 7, "fall" = 11, "winter" = 2, "all" = 12)
+  start_month <- switch(season, "spring" = 3,"breeding" = 6,"fall" = 8,"winter" = 12, "all" = 3)
+  end_month <- switch(season, "spring" = 6, "breeding" = 8, "fall" = 12, "winter" = 3, "all" = 3)
   start_year <- year
-  end_year <- ifelse(season == "winter", year+1, year)
+  end_year <- ifelse(season %in% c("winter", "all"), year+1, year)
   start_date <- str_c(start_year, start_month, 1, sep="-")
   end_date <- str_c(end_year, end_month, 1, sep="-")
+  
   get_bird_sightings_for_date_range(df, start_date, end_date)
 }
 
 # Get bird sighting data for each season in Rhode Island, 2019
-get_bird_sightings_for_season_year(weekapaug_df, "spring", 2019)
-get_bird_sightings_for_season_year(weekapaug_df, "breeding", 2019)
-get_bird_sightings_for_season_year(weekapaug_df, "fall", 2019)
-get_bird_sightings_for_season_year(weekapaug_df, "winter", 2019)
-get_bird_sightings_for_season_year(weekapaug_df, "all", 2019)
+
+get_count_per_season <- function(df, year) {
+  seasons <- unlist(c("spring", "breeding", "fall", "winter", "all"))
+  counts <- unlist(map(seasons, function(x) nrow(get_bird_sightings_for_season_year(df, x, year))))
+  years <- rep(year, times=length(seasons))
+  data.frame(cbind(years, seasons, counts))
+}
+
+get_count_per_season_for_year_range <- function(df, start_year, end_year) {
+  if (start_year > end_year)
+    stop("start_year must come before end year")
+  
+  if (start_year < 1970 | end_year < 1970)
+    stop("given years must be between 1970-present")
+  
+  years <- start_year:end_year
+  data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
+}
+
+get_count_per_season_for_year_range(weekapaug_df, 2018, 2019)
 
 ```
 
