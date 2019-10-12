@@ -156,10 +156,14 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
 # Get bird sighting data for each season in Rhode Island, 2019
 
 get_count_per_season <- function(df, year) {
-  seasons <- unlist(c("spring", "breeding", "fall", "winter", "all"))
+  seasons <- c("spring", "breeding", "fall", "winter", "all")
   counts <- unlist(map(seasons, function(x) nrow(get_bird_sightings_for_season_year(df, x, year))))
   years <- rep(year, times=length(seasons))
-  data.frame(cbind(years, seasons, counts))
+  tibble(
+    year = years,
+    season = seasons,
+    count = counts
+  )
 }
 
 get_count_per_season_for_year_range <- function(df, start_year, end_year) {
@@ -173,19 +177,21 @@ get_count_per_season_for_year_range <- function(df, start_year, end_year) {
   data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
 }
 
-get_count_per_season_for_year_range(weekapaug_df, 2018, 2019)
+# Change in total bird sightings recorded in the fall season from 2010-2019
+get_count_per_season_for_year_range(washington_county_df, 2010, 2019) %>%
+  filter(season=="fall")
 
 ```
 
 ```{r}
-# Weekapaug bird sightings 2018-present
-get_bird_sightings_for_date_range(weekapaug_df, start_date="2018-01-01")
-
-# Weekapaug bird sightings 2010-2015
-get_bird_sightings_for_date_range(weekapaug_df, start_date="2010-01-01", end_date="2015-01-01")
-
-# Weekapaug bird sightings 2019 ordered by frequency
-get_bird_sightings_for_date_range(weekapaug_df, start_date="2019-01-01") %>%
-  arrange(desc(count))
+# # Weekapaug bird sightings 2018-present
+# get_bird_sightings_for_date_range(weekapaug_df, start_date="2018-01-01")
+# 
+# # Weekapaug bird sightings 2010-2015
+# get_bird_sightings_for_date_range(weekapaug_df, start_date="2010-01-01", end_date="2015-01-01")
+# 
+# # Weekapaug bird sightings 2019 ordered by frequency
+# get_bird_sightings_for_date_range(weekapaug_df, start_date="2019-01-01") %>%
+#   arrange(desc(count))
 ```
 
