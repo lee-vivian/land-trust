@@ -79,10 +79,6 @@ get_bird_sightings <- function(url) {
     filter(!is.na(name))
 }
 
-(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
-(washington_county_df = get_bird_sightings('https://ebird.org/region/US-RI-009?yr=all&m=&rank=mrec'))
-(rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all'))
-
 # rhode_island_df %>%
 #   filter(grepl('Warbler', name))
 
@@ -91,10 +87,25 @@ get_bird_sightings <- function(url) {
 #   summarise(
 #     count = sum(count, na.rm = TRUE)
 #   )
+
+```
+
+```{r}
+(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
+(washington_county_df = get_bird_sightings('https://ebird.org/region/US-RI-009?yr=all&m=&rank=mrec'))
+(rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all'))
 ```
 
 ```{r birds_for_date_range, message=FALSE}
 get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
+  # Get bird sightings that occurred within the specified date range for a given dataframe
+  # Args:
+  #   df - the dataframe to filter
+  #   start_date - the start date in YYYY-MM-DD format, inclusive
+  #   end_date - the end date in YYYY-MM-DD format, inclusive
+  # Return:
+  #   A data frame containing the bird sightings from the given df, filtered for the
+  #   specified date range
   if (missing(start_date) & missing(end_date)) { 
     df 
   }
@@ -109,6 +120,44 @@ get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
   }
 }
 
+# Spring Migration (Mar-May)  
+# Breeding Season (Jun-Jul)  
+# Fall Migration (Aug-Nov)  
+# Winter (Dec-Feb)  
+
+get_bird_sightings_for_season_year <- function(df, season, year) {
+  # Get bird sightings that occurred for the specified season and year for a given dataframe
+  # Args:
+  #   df - the dataframe to filter
+  #   season - one of ['spring', 'breeding', 'fall', 'winter']
+  #   year - the year to filter for
+  # Return:
+  #   A data frame containing the bird sightings from the given df, filtered for the
+  #   specified season and year
+  
+  if (!season %in% c("spring", "breeding", "fall", "winter"))
+    stop("season arg must be one of ['spring', 'breeding', 'fall', 'winter']")
+  
+  if (year < 1970)
+    stop("year must be between 1970-present")
+  
+  start_month <- switch(season, "spring" = 3,"breeding" = 6,"fall" = 8,"winter" = 12)
+  end_month <- switch(season, "spring" = 5, "breeding" = 7, "fall" = 11, "winter" = 2)
+  start_year <- year
+  end_year <- ifelse(season == "winter", year+1, year)
+  start_date <- str_c(start_year, start_month, 1, sep="-")
+  end_date <- str_c(end_year, end_month, 1, sep="-")
+  get_bird_sightings_for_date_range(df, start_date, end_date)
+}
+
+# Get bird sighting data for each season in Rhode Island, 2019
+get_bird_sightings_for_season_year(rhode_island_df, "spring", 2019)
+get_bird_sightings_for_season_year(rhode_island_df, "breeding", 2019)
+get_bird_sightings_for_season_year(rhode_island_df, "fall", 2019)
+get_bird_sightings_for_season_year(rhode_island_df, "winter", 2019)
+```
+
+```{r}
 # Weekapaug bird sightings 2018-present
 get_bird_sightings_for_date_range(weekapaug_df, start_date="2018-01-01")
 
@@ -118,24 +167,5 @@ get_bird_sightings_for_date_range(weekapaug_df, start_date="2010-01-01", end_dat
 # Weekapaug bird sightings 2019 ordered by frequency
 get_bird_sightings_for_date_range(weekapaug_df, start_date="2019-01-01") %>%
   arrange(desc(count))
-
-get_spring_migration_sightings <- function(df, year) {
-  spring_start <- str_c(year, "-03-01")
-  spring_end <- str_c(year, "-05-01")
-  df %>% filter(date >= as.Date(spring_start) & date <= as.Date(spring_end)) %>%
-    arrange(desc(count))
-}
-
-get_spring_migration_sightings(weekapaug_df, "2019")
-get_spring_migration_sightings(weekapaug_df, "2018")
-get_spring_migration_sightings(weekapaug_df, "2017")
-get_spring_migration_sightings(weekapaug_df, "2016")
-get_spring_migration_sightings(weekapaug_df, "2015")
-
-# Spring Migration (Mar-May)  
-# Breeding Season (Jun-Jul)  
-# Fall Migration (Aug-Nov)  
-# Winter (Dec-Feb)  
-  
 ```
 
