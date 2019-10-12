@@ -76,7 +76,7 @@ get_bird_sightings <- function(url) {
     count = counts,
     date = dates
   ) %>%
-    filter(!is.na(name))
+    filter(!is.na(date))
 }
 
 # rhode_island_df %>%
@@ -93,8 +93,8 @@ get_bird_sightings <- function(url) {
 Create data tables for bird sightings in Weekapaug, Washington County, and Rhode Island
 
 ```{r}
-(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
-(washington_county_df = get_bird_sightings('https://ebird.org/region/US-RI-009?yr=all&m=&rank=mrec'))
+(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=hc'))
+(washington_county_df = get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=hc'))
 (rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all'))
 ```
 
@@ -126,6 +126,7 @@ get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
 # Breeding Season (Jun-Jul)  
 # Fall Migration (Aug-Nov)  
 # Winter (Dec-Feb)  
+# All (Mar-Feb)
 
 get_bird_sightings_for_season_year <- function(df, season, year) {
   # Get bird sightings that occurred for the specified season and year for a given dataframe
@@ -157,7 +158,8 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
 
 get_count_per_season <- function(df, year) {
   seasons <- c("spring", "breeding", "fall", "winter", "all")
-  counts <- unlist(map(seasons, function(x) nrow(get_bird_sightings_for_season_year(df, x, year))))
+  counts <- unlist(map(seasons, 
+                       function(x) sum(get_bird_sightings_for_season_year(df, x, year)$count)))
   years <- rep(year, times=length(seasons))
   tibble(
     year = years,
@@ -178,8 +180,20 @@ get_count_per_season_for_year_range <- function(df, start_year, end_year) {
 }
 
 # Change in total bird sightings recorded in the fall season from 2010-2019
-get_count_per_season_for_year_range(washington_county_df, 2010, 2019) %>%
+get_count_per_season_for_year_range(rhode_island_df, 2010, 2019) %>%
   filter(season=="fall")
+
+rhode_island_df %>%
+  filter(date >= as.Date("2012-08-01") & date < as.Date("2012-12-01"))
+
+washington_county_df %>%
+  filter(date >= as.Date("2012-08-01") & date < as.Date("2012-12-01"))
+
+rhode_island_df %>%
+  filter(date >= as.Date("2012-01-01" & date < as.Date("2013-01-01")))
+
+washington_county_df %>%
+  filter(name == "Red Crossbill")
 
 ```
 
