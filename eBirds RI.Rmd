@@ -129,20 +129,20 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
   # Get bird sightings that occurred for the specified season and year for a given dataframe
   # Args:
   #   df - the dataframe to filter
-  #   season - one of ['spring', 'breeding', 'fall', 'winter']
+  #   season - one of ['spring', 'breeding', 'fall', 'winter', 'all']
   #   year - the year to filter for
   # Return:
   #   A data frame containing the bird sightings from the given df, filtered for the
   #   specified season and year
   
-  if (!season %in% c("spring", "breeding", "fall", "winter"))
-    stop("season arg must be one of ['spring', 'breeding', 'fall', 'winter']")
+  if (!season %in% c("spring", "breeding", "fall", "winter", "all"))
+    stop("season arg must be one of ['spring', 'breeding', 'fall', 'winter', 'all']")
   
   if (year < 1970)
     stop("year must be between 1970-present")
   
-  start_month <- switch(season, "spring" = 3,"breeding" = 6,"fall" = 8,"winter" = 12)
-  end_month <- switch(season, "spring" = 5, "breeding" = 7, "fall" = 11, "winter" = 2)
+  start_month <- switch(season, "spring" = 3,"breeding" = 6,"fall" = 8,"winter" = 12, "all" = 1)
+  end_month <- switch(season, "spring" = 5, "breeding" = 7, "fall" = 11, "winter" = 2, "all" = 12)
   start_year <- year
   end_year <- ifelse(season == "winter", year+1, year)
   start_date <- str_c(start_year, start_month, 1, sep="-")
@@ -151,10 +151,12 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
 }
 
 # Get bird sighting data for each season in Rhode Island, 2019
-get_bird_sightings_for_season_year(rhode_island_df, "spring", 2019)
-get_bird_sightings_for_season_year(rhode_island_df, "breeding", 2019)
-get_bird_sightings_for_season_year(rhode_island_df, "fall", 2019)
-get_bird_sightings_for_season_year(rhode_island_df, "winter", 2019)
+get_bird_sightings_for_season_year(weekapaug_df, "spring", 2019)
+get_bird_sightings_for_season_year(weekapaug_df, "breeding", 2019)
+get_bird_sightings_for_season_year(weekapaug_df, "fall", 2019)
+get_bird_sightings_for_season_year(weekapaug_df, "winter", 2019)
+get_bird_sightings_for_season_year(weekapaug_df, "all", 2019)
+
 ```
 
 ```{r}
