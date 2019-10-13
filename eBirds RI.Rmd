@@ -16,7 +16,7 @@ library(tidyverse)
 library(lubridate)
 ```
 
-## Bird Sightings By Species Over Time in Rhode Island  
+## Bird Sightings By Species Over Time  
 
 Data gathered from ebird.org  
 
@@ -55,10 +55,9 @@ get_bird_sightings <- function(url) {
   
   # X connotes 1 or more birds sighted. Replace X with 1 since at least 1 bird was sighted.
   counts <- bird_sightings %>%
-    html_node(xpath = 'td[@headers="c"]') %>%
+    html_node(xpath='td[@headers="c"]') %>%
     html_text() %>%
-    lapply(function(x) ifelse(x=='X', 1, x)) %>%
-    unlist() %>%
+    map_chr(function(x) ifelse(x=="X", 1, x)) %>%
     as.integer()
     
   # Suppress warnings when NA is assigned to missing dates
@@ -93,9 +92,8 @@ get_bird_sightings <- function(url) {
 Create data tables for bird sightings in Weekapaug, Washington County, and Rhode Island
 
 ```{r}
-(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=hc'))
-(washington_county_df = get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=hc'))
-(rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all'))
+(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
+(washington_county_df = get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=mrec'))
 ```
 
 ```{r birds_for_date_range, message=FALSE}
@@ -154,8 +152,6 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
   get_bird_sightings_for_date_range(df, start_date, end_date)
 }
 
-# Get bird sighting data for each season in Rhode Island, 2019
-
 get_count_per_season <- function(df, year) {
   seasons <- c("spring", "breeding", "fall", "winter", "all")
   counts <- unlist(map(seasons, 
@@ -179,21 +175,14 @@ get_count_per_season_for_year_range <- function(df, start_year, end_year) {
   data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
 }
 
+```
+
+```{r}
+# Get bird sighting data for each season in Washington County, RI (2019)
+
 # Change in total bird sightings recorded in the fall season from 2010-2019
-get_count_per_season_for_year_range(rhode_island_df, 2010, 2019) %>%
+get_count_per_season_for_year_range(washington_county_df, 2010, 2019) %>%
   filter(season=="fall")
-
-rhode_island_df %>%
-  filter(date >= as.Date("2012-08-01") & date < as.Date("2012-12-01"))
-
-washington_county_df %>%
-  filter(date >= as.Date("2012-08-01") & date < as.Date("2012-12-01"))
-
-rhode_island_df %>%
-  filter(date >= as.Date("2012-01-01" & date < as.Date("2013-01-01")))
-
-washington_county_df %>%
-  filter(name == "Red Crossbill")
 
 ```
 
