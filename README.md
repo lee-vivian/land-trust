@@ -1,7 +1,7 @@
 # land-trust
 Not-for-profit land trust research project for the Weekapaug Foundation
 
-Analyzes data from eBirds to see the trends in bird sightings in Weekapaug, Washington County, Rhode Island over the years and in each season.
+Analyzes data from eBirds to see the trends in bird sightings in Washington County, RI and Rhode Island over the past decade (1999-2019) and in each season of the migration year.
 
 Seasons Include:
 * Spring Migration (Mar-May)  
