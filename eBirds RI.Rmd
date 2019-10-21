@@ -1,5 +1,5 @@
 ---
-title: "eBirds RI"
+title: "eBirds Weekapaug, Washington County, RI"
 author: "Vivian Lee"
 date: '`r Sys.Date()`'
 output: 
@@ -92,7 +92,7 @@ get_bird_sightings <- function(url) {
 Create data tables for bird sightings in Weekapaug, Washington County, and Rhode Island
 
 ```{r}
-(weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
+# (weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
 (washington_county_df = get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=mrec'))
 ```
 
@@ -152,28 +152,31 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
   get_bird_sightings_for_date_range(df, start_date, end_date)
 }
 
-get_count_per_season <- function(df, year) {
+get_count_per_season_data <- function(df, year) {
   seasons <- c("spring", "breeding", "fall", "winter", "all")
-  counts <- unlist(map(seasons, 
-                       function(x) sum(get_bird_sightings_for_season_year(df, x, year)$count)))
-  years <- rep(year, times=length(seasons))
-  tibble(
-    year = years,
-    season = seasons,
-    count = counts
-  )
+  c(year, unlist(map(seasons, function(x) sum(get_bird_sightings_for_season_year(df, x, year)$count))))
 }
 
+# start_year (inclusive) to end_year (inclusive)
 get_count_per_season_for_year_range <- function(df, start_year, end_year) {
-  if (start_year > end_year)
-    stop("start_year must come before end year")
-  
-  if (start_year < 1970 | end_year < 1970)
-    stop("given years must be between 1970-present")
-  
   years <- start_year:end_year
-  data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
+  year_row_data <- map(years, function(x) get_count_per_season_data(df, x))
+  result_df <- data.frame(do.call(rbind, year_row_data))
+  colnames(result_df) <- c("year","spring", "breeding", "fall", "winter", "all")
+  result_df
 }
+
+# get_count_per_season_for_year_range <- function(df, start_year, end_year) {
+#   if (start_year > end_year)
+#     stop("start_year must come before end year")
+#   
+#   if (start_year < 1970 | end_year < 1970)
+#     stop("given years must be between 1970-present")
+#   
+#   years <- start_year:end_year
+#   data.frame(do.call(rbind, years))
+#   data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
+# }
 
 ```
 
@@ -181,8 +184,7 @@ get_count_per_season_for_year_range <- function(df, start_year, end_year) {
 # Get bird sighting data for each season in Washington County, RI (2019)
 
 # Change in total bird sightings recorded in the fall season from 2010-2019
-get_count_per_season_for_year_range(washington_county_df, 2010, 2019) %>%
-  filter(season=="fall")
+get_count_per_season_for_year_range(washington_county_df, 2010, 2019)
 
 ```
 
