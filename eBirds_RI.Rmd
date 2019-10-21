@@ -1,6 +1,6 @@
 ---
-title: "eBirds Weekapaug, Washington County, RI"
-author: "Vivian Lee"
+title: "eBirds Data Analysis"
+author: "Vivian Lee, Shun Yamamoto, and Vivian Chen"
 date: '`r Sys.Date()`'
 output: 
   pdf_document: default
@@ -14,20 +14,17 @@ knitr::opts_chunk$set(message = FALSE)
 library(rvest)
 library(tidyverse)
 library(lubridate)
+library(ggplot2)
 ```
 
-## Bird Sightings By Species Over Time  
+## Analysis of Bird Sightings Recorded on eBirds  
 
-Data gathered from ebird.org  
+Source: data gathered from ebird.org, managed by the Cornell Lab of Orthinology  
 
-Spring Migration (Mar-May)  
-Breeding Season (Jun-Jul)  
-Fall Migration (Aug-Nov)  
-Winter (Dec-Feb)  
 
 ```{r ri_ebirds, message=FALSE}
 
-# Function to extract bird sighting data
+# Functions to extract and organize bird sighting data
 
 get_bird_sightings <- function(url) {
   # Scrape the results from the given url from eBirds for a specific region 
@@ -77,24 +74,34 @@ get_bird_sightings <- function(url) {
   ) %>%
     filter(!is.na(date))
 }
-
-# rhode_island_df %>%
-#   filter(grepl('Warbler', name))
-
-# birds_df %>%
-#   group_by(name, code) %>%
-#   summarise(
-#     count = sum(count, na.rm = TRUE)
-#   )
-
 ```
 
-Create data tables for bird sightings in Weekapaug, Washington County, and Rhode Island
+### Create data tables for bird sightings in Washington County, RI and Rhode Island  
+
+We chose to analyze Washington County, which contains many towns including Weekapaug, as opposed to analyzing Weekapaug alone, due to the larger amount of sightings logged for the county. We also analyzed the bird sightings recorded for the entire state of Rhode Island. Our functions and methodology can be applied to any data table on eBirds for additional analyses of different regions.
+ 
+### Washington County, RI Bird Sightings  
 
 ```{r}
-# (weekapaug_df <- get_bird_sightings('https://ebird.org/hotspot/L620475?yr=all&m=&rank=mrec'))
-(washington_county_df = get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=mrec'))
+(washington_county_df <- 
+   get_bird_sightings('https://ebird.org/subnational2/US-RI-009?yr=all&m=&rank=mrec'))
 ```
+
+### Rhode Island Bird Sightings  
+
+```{r}
+(rhode_island_df <- get_bird_sightings('https://ebird.org/region/US-RI?yr=all&m=&rank=mrec'))
+```
+
+### Organize Sightings by Date and Season of the Year
+
+eBirds divides the bird migration year into the following four seasons:  
+
+Spring Migration (Mar-May)  
+Breeding Season (Jun-Jul)  
+Fall Migration (Aug-Nov)  
+Winter (Dec-Feb)  
+All (Mar-Feb)
 
 ```{r birds_for_date_range, message=FALSE}
 get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
@@ -119,13 +126,9 @@ get_bird_sightings_for_date_range <- function(df, start_date, end_date) {
     df %>% filter(date >= as.Date(start_date) & date < as.Date(end_date))
   }
 }
+```
 
-# Spring Migration (Mar-May)  
-# Breeding Season (Jun-Jul)  
-# Fall Migration (Aug-Nov)  
-# Winter (Dec-Feb)  
-# All (Mar-Feb)
-
+```{r}
 get_bird_sightings_for_season_year <- function(df, season, year) {
   # Get bird sightings that occurred for the specified season and year for a given dataframe
   # Args:
@@ -154,7 +157,8 @@ get_bird_sightings_for_season_year <- function(df, season, year) {
 
 get_count_per_season_data <- function(df, year) {
   seasons <- c("spring", "breeding", "fall", "winter", "all")
-  c(year, unlist(map(seasons, function(x) sum(get_bird_sightings_for_season_year(df, x, year)$count))))
+  c(year, unlist(map(seasons, 
+                     function(x) sum(get_bird_sightings_for_season_year(df, x, year)$count))))
 }
 
 # start_year (inclusive) to end_year (inclusive)
@@ -166,37 +170,40 @@ get_count_per_season_for_year_range <- function(df, start_year, end_year) {
   result_df
 }
 
-# get_count_per_season_for_year_range <- function(df, start_year, end_year) {
-#   if (start_year > end_year)
-#     stop("start_year must come before end year")
-#   
-#   if (start_year < 1970 | end_year < 1970)
-#     stop("given years must be between 1970-present")
-#   
-#   years <- start_year:end_year
-#   data.frame(do.call(rbind, years))
-#   data.frame(rbind(map_dfr(years, function(x) get_count_per_season(df, x))))
-# }
+# input: must be dataframe returned by get_count_per_season_for_year_range
+plot_sightings_by_season <- function(df) {
+  df %>% gather(`spring`, `breeding`, `fall`, `winter`, `all`, key="season", value="count") %>%
+    ggplot(mapping=aes(x=year, y=count, color=season)) +
+    geom_smooth(method="loess")
+}
 
+```
+
+### Birds Sighted in Washington County, RI by Season Between 1999-2019
+
+```{r}
+washington_sightings_by_season_1999_2019 <- 
+   get_count_per_season_for_year_range(washington_county_df, 1999, 2019)
+
+head(washington_sightings_by_season_1999_2019, 10)
 ```
 
 ```{r}
-# Get bird sighting data for each season in Washington County, RI (2019)
+plot_sightings_by_season(washington_sightings_by_season_1999_2019)
+```
 
-# Change in total bird sightings recorded in the fall season from 2010-2019
-get_count_per_season_for_year_range(washington_county_df, 2010, 2019)
+### Birds Sighted in Rhode Island by Season Between 1999-2019  
 
+```{r}
+ri_sightings_by_season_1999_2019 <- 
+   get_count_per_season_for_year_range(rhode_island_df, 1999, 2019)
+
+head(ri_sightings_by_season_1999_2019, 10)
 ```
 
 ```{r}
-# # Weekapaug bird sightings 2018-present
-# get_bird_sightings_for_date_range(weekapaug_df, start_date="2018-01-01")
-# 
-# # Weekapaug bird sightings 2010-2015
-# get_bird_sightings_for_date_range(weekapaug_df, start_date="2010-01-01", end_date="2015-01-01")
-# 
-# # Weekapaug bird sightings 2019 ordered by frequency
-# get_bird_sightings_for_date_range(weekapaug_df, start_date="2019-01-01") %>%
-#   arrange(desc(count))
+plot_sightings_by_season(ri_sightings_by_season_1999_2019)
 ```
+  
+Note that the Fall line dips below 0 between 2010 and 2015. The actual count of birds sighted can never be below 0; this dip is due to the smoothing function used to smooth the line plot and show the trend over time. The loess function, typically used for plotting small data sets with < 1000 observations, was used to plot the line graphs. 
 
